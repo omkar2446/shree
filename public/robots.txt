@@ -1,0 +1,19 @@
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: *
+Allow: /
+
+User-agent: *
+Allow: /
+Sitemap: https://vercel.com/omkars-projects-5aca047e/shree_swami_mandir_dadh/sitemap.xml
+google-site-verification=6odVkDI4qDj0cGuEwITn9pvNTciNPjQAIA1NYaELq-s
