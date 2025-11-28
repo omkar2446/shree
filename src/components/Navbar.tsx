@@ -73,7 +73,9 @@ export const Navbar = () => {
               className="md:hidden p-2 rounded hover:bg-gray-200/20 transition"
             >
               <Menu size={26} />
+              
             </button>
+            
 
             {/* Logo */}
             <Link
@@ -108,7 +110,9 @@ export const Navbar = () => {
           transform: open ? "translateX(0)" : "translateX(-100%)",
           transition: "transform 300ms ease",
         }}
+        
       >
+        
         {/* Sidebar Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h2 className="text-lg font-semibold">मेनू</h2>
@@ -155,13 +159,7 @@ export const Navbar = () => {
           </Link>
 
           {/* ⭐ SOCIAL HUB LINKS IN MOBILE SIDEBAR */}
-           <Link
-            to="/social/login"
-            onClick={() => setOpen(false)}
-            className="text-base font-medium py-2 px-2 rounded hover:bg-gray-200/10"
-          >
-            Login
-          </Link>
+          
           <Link
             to="/social"
             onClick={() => setOpen(false)}
@@ -177,6 +175,13 @@ export const Navbar = () => {
             className="text-base font-medium py-2 px-2 rounded hover:bg-gray-200/10"
           >
             Create Post
+          </Link>
+           <Link
+            to="/social/login"
+            onClick={() => setOpen(false)}
+            className="text-base font-medium py-2 px-2 rounded hover:bg-gray-200/10"
+          >
+            Login
           </Link>
 
          

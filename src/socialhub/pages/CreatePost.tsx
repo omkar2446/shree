@@ -2,8 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
-
-
+import { compressVideo } from "@/utils/compressVideo";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,35 +12,61 @@ import { Loader2, Image, Video, X } from "lucide-react";
 
 const CreatePost = () => {
   const navigate = useNavigate();
+
   const [content, setContent] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+
+  // NEW STATES (Required for compression)
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [mediaType, setMediaType] = useState<"image" | "video" | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      if (selectedFile.size > 10 * 1024 * 1024) {
-        toast.error("File size must be less than 10MB");
-        return;
-      }
-      setFile(selectedFile);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreview(reader.result as string);
-      };
-      reader.readAsDataURL(selectedFile);
+  // 📌 FILE HANDLER (Image + Video + Compression)
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    let finalFile = file;
+
+    // ✔ VIDEO → COMPRESS TO < 9MB
+    if (file.type.startsWith("video/")) {
+      setIsCompressing(true);
+      finalFile = await compressVideo(file); // compress function
+      setIsCompressing(false);
+      setMediaType("video");
     }
+
+    // ✔ IMAGE
+    else if (file.type.startsWith("image/")) {
+      setMediaType("image");
+    }
+
+    // ❌ Not allowed
+    else {
+      toast.error("Only image or video allowed");
+      return;
+    }
+
+    // Save final compressed file
+    setMediaFile(finalFile);
+
+    // Create preview
+    setPreview(URL.createObjectURL(finalFile));
   };
 
+  // 📌 CLEAR FILE
   const clearFile = () => {
-    setFile(null);
+    setMediaFile(null);
     setPreview(null);
+    setMediaType(null);
   };
 
+  // 📌 FORM SUBMIT → Upload to Supabase
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim() && !file) {
+
+    if (!content.trim() && !mediaFile) {
       toast.error("Please add some content or media");
       return;
     }
@@ -49,35 +74,41 @@ const CreatePost = () => {
     setLoading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (!user) throw new Error("Not authenticated");
 
       let mediaUrl = null;
-      let mediaType = null;
+      let media_type = null;
 
-      if (file) {
-        const fileExt = file.name.split(".").pop();
+      // 📌 Upload media if exists
+      if (mediaFile) {
+        const fileExt = mediaFile.name.split(".").pop();
         const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-        
-        const { error: uploadError, data } = await supabase.storage
+
+        // Upload compressed or normal file
+        const { error: uploadError } = await supabase.storage
           .from("media")
-          .upload(fileName, file);
+          .upload(fileName, mediaFile);
 
         if (uploadError) throw uploadError;
 
-        const { data: { publicUrl } } = supabase.storage
-          .from("media")
-          .getPublicUrl(fileName);
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("media").getPublicUrl(fileName);
 
         mediaUrl = publicUrl;
-        mediaType = file.type.startsWith("video/") ? "video" : "image";
+        media_type = mediaType;
       }
 
+      // 📌 Insert into posts table
       const { error } = await supabase.from("posts").insert({
         user_id: user.id,
         content: content.trim(),
         media_url: mediaUrl,
-        media_type: mediaType,
+        media_type: media_type,
       });
 
       if (error) throw error;
@@ -95,13 +126,16 @@ const CreatePost = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
+
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         <Card>
           <CardHeader>
             <CardTitle>Create a new post</CardTitle>
           </CardHeader>
+
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              {/* CONTENT */}
               <div className="space-y-2">
                 <Label htmlFor="content">What's on your mind?</Label>
                 <Textarea
@@ -114,13 +148,20 @@ const CreatePost = () => {
                 />
               </div>
 
+              {/* MEDIA PREVIEW */}
               {preview && (
                 <div className="relative rounded-lg overflow-hidden bg-muted">
-                  {file?.type.startsWith("video/") ? (
+                  {mediaType === "video" ? (
                     <video src={preview} controls className="w-full max-h-96" />
                   ) : (
-                    <img src={preview} alt="Preview" className="w-full max-h-96 object-contain" />
+                    <img
+                      src={preview}
+                      alt="Preview"
+                      className="w-full max-h-96 object-contain"
+                    />
                   )}
+
+                  {/* REMOVE BUTTON */}
                   <Button
                     type="button"
                     variant="destructive"
@@ -133,9 +174,18 @@ const CreatePost = () => {
                 </div>
               )}
 
+              {/* COMPRESSION LOADER */}
+              {isCompressing && (
+                <p className="text-sm text-muted-foreground">
+                  Compressing video… please wait
+                </p>
+              )}
+
+              {/* UPLOAD BUTTONS */}
               <div className="flex flex-wrap gap-2">
+                {/* IMAGE */}
                 <Label htmlFor="image-upload" className="cursor-pointer">
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors">
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-md border border-input bg-background hover:bg-accent transition-colors">
                     <Image className="h-4 w-4" />
                     <span className="text-sm">Add Photo</span>
                   </div>
@@ -148,8 +198,9 @@ const CreatePost = () => {
                   />
                 </Label>
 
+                {/* VIDEO */}
                 <Label htmlFor="video-upload" className="cursor-pointer">
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors">
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-md border border-input bg-background hover:bg-accent transition-colors">
                     <Video className="h-4 w-4" />
                     <span className="text-sm">Add Video</span>
                   </div>
@@ -163,7 +214,8 @@ const CreatePost = () => {
                 </Label>
               </div>
 
-              <Button type="submit" className="w-full" disabled={loading}>
+              {/* SUBMIT */}
+              <Button className="w-full" type="submit" disabled={loading}>
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -28,13 +28,8 @@ export const Hero = () => {
             >
               Learn More
             </Button>
-            <Button 
-              size="lg" 
-              variant="outline"
-              className="border-2 border-primary text-foreground hover:bg-primary/10 text-lg px-8 py-6"
-            >
-              Read Teachings
-            </Button>
+            
+           
           </div>
         </div>
       </div>

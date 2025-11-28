@@ -93,6 +93,7 @@ const Auth = () => {
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
+              
                 id="email"
                 type="email"
                 placeholder="you@example.com"
