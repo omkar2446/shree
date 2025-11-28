@@ -11,13 +11,16 @@ interface Post {
   media_url: string | null;
   media_type: string | null;
   created_at: string;
-  profiles: {
-    name: string;
-    avatar_url: string | null;
-  } | {
-    name: string;
-    avatar_url: string | null;
-  }[] | null;
+  profiles:
+    | {
+        full_name: string | null;
+        avatar_url: string | null;
+      }
+    | {
+        full_name: string | null;
+        avatar_url: string | null;
+      }[]
+    | null;
 }
 
 const Home = () => {
@@ -54,14 +57,14 @@ const Home = () => {
         .from("posts")
         .select(`
           id,
-    content,
-    media_url,
-    media_type,
-    created_at,
-    profiles:user_id (
-      name,
-      avatar_url
-    )
+          content,
+          media_url,
+          media_type,
+          created_at,
+          profiles:user_id (
+            full_name,
+            avatar_url
+          )
         `)
         .order("created_at", { ascending: false });
 

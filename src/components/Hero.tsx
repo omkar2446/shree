@@ -1,7 +1,12 @@
 import heroImage from "@/assets/hero-divine.jpg";
 import { Button } from "@/components/ui/button";
+import { Dispatch, SetStateAction } from "react";
 
-export const Hero = () => {
+type HeroProps = {
+  setSidebarOpen?: Dispatch<SetStateAction<boolean>>;
+};
+
+export const Hero = ({ setSidebarOpen }: HeroProps) => {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <div 
@@ -19,18 +24,17 @@ export const Hero = () => {
           <h2 className="text-3xl md:text-5xl font-semibold mb-8 bg-gradient-divine bg-clip-text text-transparent">
             Shree Swami Samarth 
           </h2>
-          
-          
+
           <div className="flex gap-4 justify-center flex-wrap">
             <Button 
-              size="lg" 
+              size="lg"
               className="bg-gradient-divine text-white hover:opacity-90 transition-all shadow-divine text-lg px-8 py-6"
+              onClick={() => setSidebarOpen?.(true)}    // 💥 FIX HERE
             >
               Learn More
             </Button>
-            
-           
           </div>
+
         </div>
       </div>
     </section>

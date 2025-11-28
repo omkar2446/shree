@@ -8,33 +8,43 @@ interface PostCardProps {
     media_url: string | null;
     media_type: string | null;
     created_at: string;
-    profiles: {
-      name: string;
-      avatar_url: string | null;
-    } | {
-      name: string;
-      avatar_url: string | null;
-    }[] | null;
+    profiles:
+      | {
+          full_name: string | null;
+          avatar_url: string | null;
+        }
+      | {
+          full_name: string | null;
+          avatar_url: string | null;
+        }[]
+      | null;
   };
 }
 
 const PostCard = ({ post }: PostCardProps) => {
-  // Handle profiles being either an object or array
-  const profile = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
-  const userName = profile?.name || "Anonymous";
+  // Handle profiles being either array or single object
+  const profile = Array.isArray(post.profiles)
+    ? post.profiles[0]
+    : post.profiles;
+
+  // Use full_name instead of name
+  const userName = profile?.full_name || "Anonymous";
   const avatarUrl = profile?.avatar_url;
 
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader>
         <div className="flex items-center gap-3">
-          {avatarUrl && (
+          {avatarUrl ? (
             <img
               src={avatarUrl}
               alt={userName}
               className="w-10 h-10 rounded-full object-cover"
             />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-gray-300" />
           )}
+
           <div>
             <p className="font-semibold text-sm">{userName}</p>
             <p className="text-xs text-muted-foreground">
@@ -43,8 +53,10 @@ const PostCard = ({ post }: PostCardProps) => {
           </div>
         </div>
       </CardHeader>
+
       <CardContent className="space-y-3">
         <p className="text-sm">{post.content}</p>
+
         {post.media_url && (
           <div className="rounded-lg overflow-hidden bg-muted">
             {post.media_type === "video" ? (
@@ -64,3 +76,4 @@ const PostCard = ({ post }: PostCardProps) => {
 };
 
 export default PostCard;
+ 

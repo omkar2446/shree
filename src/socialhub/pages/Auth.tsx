@@ -16,7 +16,7 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
+  const [fullName, setFullName] = useState("");
 
   useEffect(() => {
     // Check if user is already logged in
@@ -43,15 +43,27 @@ const Auth = () => {
         toast.success("Welcome back!");
         navigate("/");
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data: signUpData, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: { name },
+            data: { full_name: fullName },
             emailRedirectTo: `${window.location.origin}/`,
           },
         });
         if (error) throw error;
+
+        // Upsert the profile so `full_name` is stored in profiles table immediately
+        try {
+          const { data: userData } = await supabase.auth.getUser();
+          const user = userData?.user ?? signUpData?.user ?? null;
+          if (user) {
+            await supabase.from("profiles").upsert({ id: user.id, full_name: fullName || "", email: user.email });
+          }
+        } catch (e) {
+          console.warn("Failed to upsert profile after signup", e);
+        }
+
         toast.success("Account created! Welcome!");
         navigate("/");
       }
@@ -79,13 +91,13 @@ const Auth = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
               <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
+                <Label htmlFor="fullName">Full Name</Label>
                 <Input
-                  id="name"
+                  id="fullName"
                   type="text"
-                  placeholder="Your name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your full name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
                   required={!isLogin}
                 />
               </div>
@@ -136,6 +148,15 @@ const Auth = () => {
               {isLogin 
                 ? "Don't have an account? Sign up" 
                 : "Already have an account? Sign in"}
+            </button>
+          </div>
+          <div className="mt-2 text-center text-sm">
+            <button
+              type="button"
+              onClick={() => navigate('/admin/login')}
+              className="text-red-600 hover:underline"
+            >
+              Admin login
             </button>
           </div>
         </CardContent>
