@@ -22,7 +22,7 @@ export default function Reminder() {
       // Create push subscription
       const subscription = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC,
+        applicationServerKey: import.meta.env.VITE_VAPID_PUBLIC_KEY,
       });
 
       // Save the subscription to backend

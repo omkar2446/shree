@@ -7,9 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 
-type ProfileOption = { 
-  id: string; 
-  full_name?: string | null; 
+type ProfileOption = {
+  id: string;
+  full_name?: string | null;
   email?: string | null;
   role?: string | null;
 };
@@ -80,8 +80,16 @@ const AdminNotifications: React.FC = () => {
         user_id: isGlobal ? null : recipient,
       };
 
-      const { error } = await supabase.from("notifications").insert([payload]);
-      if (error) throw error;
+      const res = await fetch("/api/send-notification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to send notification");
+      }
 
       toast.success("Notification sent!");
 
